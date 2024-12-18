@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<BES xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="BES.xsd">
+	<Fixlet>
+		<Title>Firewall Rule- Add, Update and Remove (Windows)</Title>
+		<Description><![CDATA[
+<STYLE>
+    .form-group {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+        margin-top: 10px;
+    }
+    .form-group label {
+        width: 150px; /* Fixed width for labels */
+        text-align: right; /* Align label text to the right */
+        margin-right: 10px; /* Space between label and input */
+    }
+    .form-group input, .form-group select {
+        width: 300px; /* Fixed width for input boxes */
+        padding: 5px; /* Add some padding for better appearance */
+        box-sizing: border-box; /* Ensure padding doesn't affect the total width */
+    }
+</STYLE>
+
+<P><LABEL for=secret><STRONG><FONT color=#008000 size=3>Customization Options</FONT></STRONG> </LABEL></P>
+<DIV class=form-group><LABEL for=Operation>Operation</LABEL> <SELECT id=Operation name=Operation> <OPTION selected value=Add>Add</OPTION> <OPTION value=Update>Update</OPTION> <OPTION value=Remove>Remove</OPTION></SELECT> </DIV>
+<DIV class=form-group><LABEL for=RuleName>Rule Name</LABEL> <INPUT id=RuleName name=RuleName> </DIV>
+<DIV class=form-group><LABEL for=Protocol>Protocol</LABEL> <SELECT id=Protocol name=Protocol> <OPTION value=Any>Any</OPTION> <OPTION value=Custom>Custom</OPTION> <OPTION value=HOPOPT>HOPOPT</OPTION> <OPTION value=ICMPv4>ICMPv4</OPTION> <OPTION value=IGMP>IGMP</OPTION> <OPTION selected value=TCP>TCP</OPTION> <OPTION value=UDP>UDP</OPTION> <OPTION value=IPv6>IPv6</OPTION> <OPTION value=IPv6-Route>IPv6-Route</OPTION> <OPTION value=IPv6-Frag>IPv6-Frag</OPTION> <OPTION value=GRE>GRE</OPTION> <OPTION value=ICMPv6>ICMPv6</OPTION> <OPTION value=IPv6-NoNxt>IPv6-NoNxt</OPTION> <OPTION value=IPv6-Opts>IPv6-Opts</OPTION> <OPTION value=VRRP>VRRP</OPTION> <OPTION value=PGM>PGM</OPTION> <OPTION value=L2TP>L2TP</OPTION></SELECT> </DIV>
+<DIV class=form-group><LABEL for=Port>Port</LABEL> <INPUT id=Port name=Port> </DIV>
+<DIV class=form-group><LABEL for=SourceAddress>Source Address</LABEL> <INPUT id=SourceAddress name=SourceAddress> </DIV>
+<DIV class=form-group><LABEL for=DestinationAddress>Destination Address</LABEL> <INPUT id=DestinationAddress name=DestinationAddress> </DIV>
+<DIV class=form-group><LABEL for=Action>Action</LABEL> <SELECT id=Action name=Action> <OPTION selected value=Allow>Allow</OPTION> <OPTION value=Block>Block</OPTION></SELECT> </DIV>
+<DIV class=form-group><LABEL for=Program>Program</LABEL> <INPUT id=Program name=Program> </DIV>
+<DIV class=form-group><LABEL for=Enabled>Enabled</LABEL> <SELECT id=Enabled name=Enabled> <OPTION selected value=True>True</OPTION> <OPTION value=False>False</OPTION></SELECT> </DIV>
+<DIV class=form-group><LABEL for=Direction>Direction</LABEL> <SELECT id=Direction name=Direction> <OPTION selected value=Inbound>Inbound</OPTION> <OPTION value=Outbound>Outbound</OPTION></SELECT> </DIV><script>
+    document.body.ontakeaction = function() {
+        var theOperation = document.getElementById("Operation").value;
+        var theRuleName = document.getElementById("RuleName").value;
+        var theProtocol = document.getElementById("Protocol").value;
+        var thePort = document.getElementById("Port").value;
+        var theSourceAddress = document.getElementById("SourceAddress").value;
+        var theDestinationAddress = document.getElementById("DestinationAddress").value;
+        var theAction = document.getElementById("Action").value;
+        var theProgram = document.getElementById("Program").value;
+        var theEnabled = document.getElementById("Enabled").value;
+        var theDirection = document.getElementById("Direction").value;
+
+        if (!theRuleName) {
+            alert("Hey, you forgot to enter the Rule Name parameter!");
+        } else if (theOperation === "Remove") {
+            // Only Rule Name is mandatory for Remove, no additional checks
+            TakeSecureFixletAction(Relevance('id of current fixlet'), 
+                Relevance('id of current bes site'), 
+                "Action1", {}, { 
+                    "Operation": theOperation,
+                    "RuleName": theRuleName,
+                    "Protocol": "",
+                    "Port": "",
+                    "SourceAddress": "",
+                    "DestinationAddress": "",
+                    "Action": "",
+                    "Program": "",
+                    "Enabled": "",
+                    "Direction": "" 
+                });
+        } else if (!theProtocol) {
+            alert("Hey, you forgot to select the Protocol parameter!");
+        } else if (!theOperation) {
+            alert("Hey, you forgot to select the Operation parameter!");
+        } else if (!thePort) {
+            alert("Hey, you forgot to enter the Port parameter!");
+        } else if (!theSourceAddress) {
+            alert("Hey, you forgot to enter the SourceAddress parameter!");
+        } else if (!theDestinationAddress) {
+            alert("Hey, you forgot to enter the DestinationAddress parameter!");
+        } else if (!theAction) {
+            alert("Hey, you forgot to select the Action parameter!");
+        } else if (!theProgram) {
+            alert("Hey, you forgot to enter the Program parameter!");
+        } else if (!theEnabled) {
+            alert("Hey, you forgot to select the Enabled parameter!");
+        } else if (!theDirection) {
+            alert("Hey, you forgot to select the Direction parameter!");
+        } else {
+            TakeSecureFixletAction(Relevance('id of current fixlet'), 
+                Relevance('id of current bes site'), 
+                "Action1", {}, { 
+                    "Operation": theOperation,
+                    "RuleName": theRuleName,
+                    "Protocol": theProtocol,
+                    "Port": thePort,
+                    "SourceAddress": theSourceAddress,
+                    "DestinationAddress": theDestinationAddress,
+                    "Action": theAction,
+                    "Program": theProgram,
+                    "Enabled": theEnabled,
+                    "Direction": theDirection 
+                });
+        }
+        return false;
+    }
+</script> 
+<BLOCKQUOTE></BLOCKQUOTE>]]></Description>
+		<Relevance>((name of it = "Win2012R2") OR (name of it = "Win2016") OR (name of it = "Win2019") OR (name of it = "Win2022")) of operating system</Relevance>
+		<Category></Category>
+		<Source>Internal</Source>
+		<SourceID></SourceID>
+		<SourceReleaseDate>2024-11-19</SourceReleaseDate>
+		<SourceSeverity></SourceSeverity>
+		<CVENames></CVENames>
+		<SANSID></SANSID>
+		<MIMEField>
+			<Name>x-fixlet-modification-time</Name>
+			<Value>Wed, 18 Dec 2024 20:05:56 +0000</Value>
+		</MIMEField>
+		<Domain>BESC</Domain>
+		<DefaultAction ID="Action1">
+			<Description>
+				<PreLink>Click </PreLink>
+				<Link>here</Link>
+				<PostLink> to deploy this action.</PostLink>
+			</Description>
+			<ActionScript MIMEType="application/x-Fixlet-Windows-Shell">action uses wow64 redirection {false}
+
+delete __createfile
+
+
+
+createfile until EOF
+
+# Input Parameters
+$Operation = "{parameter "Operation"}" # Add, Update, Remove
+$RuleName = "{parameter "RuleName"}"
+
+# Perform action based on Operation parameter
+if ($Operation -eq "Add") {{
+	# Input Parameters
+	$Protocol = "{parameter "Protocol"}"   # TCP, UDP, etc.
+	$Port = "{parameter "Port"}"
+	$SourceAddress = "{parameter "SourceAddress"}"
+	$DestinationAddress = "{parameter "DestinationAddress"}"
+	$Action = "{parameter "Action"}"       # Allow, Block
+	$Program = "{parameter "Program"}"     # Path to a program
+	$Enabled = "{parameter "Enabled"}"     # True, False
+	$Direction = "{parameter "Direction"}" # Inbound, Outbound
+    # Add New Rule
+    New-NetFirewallRule -DisplayName $RuleName `
+                        -Direction $Direction `
+                        -Protocol $Protocol `
+                        -LocalPort $Port `
+                        -RemoteAddress $SourceAddress `
+                        -LocalAddress $DestinationAddress `
+                        -Action $Action `
+                        -Enabled $Enabled `
+                        -Program $Program
+}
+elseif ($Operation -eq "Update") {{
+	# Input Parameters
+	$Protocol = "{parameter "Protocol"}"   # TCP, UDP, etc.
+	$Port = "{parameter "Port"}"
+	$SourceAddress = "{parameter "SourceAddress"}"
+	$DestinationAddress = "{parameter "DestinationAddress"}"
+	$Action = "{parameter "Action"}"       # Allow, Block
+	$Program = "{parameter "Program"}"     # Path to a program
+	$Enabled = "{parameter "Enabled"}"     # True, False
+	$Direction = "{parameter "Direction"}" # Inbound, Outbound
+    # Update Existing Rule
+    if (Get-NetFirewallRule -DisplayName $RuleName -ErrorAction SilentlyContinue) {{
+        Set-NetFirewallRule -DisplayName $RuleName `
+                            -Direction $Direction `
+                            -Protocol $Protocol `
+                            -LocalPort $Port `
+                            -RemoteAddress $SourceAddress `
+                            -LocalAddress $DestinationAddress `
+                            -Action $Action `
+                            -Enabled $Enabled `
+                            -Program $Program
+    }
+}
+elseif ($Operation -eq "Remove") {{
+    # Remove Existing Rule
+    if (Get-NetFirewallRule -DisplayName $RuleName -ErrorAction SilentlyContinue) {{
+        Remove-NetFirewallRule -DisplayName $RuleName
+    }
+}
+else {{
+    Write-Output "Error: Invalid Operation. Please specify 'Add', 'Update', or 'Remove'."
+}
+
+EOF
+
+delete powershell.ps1
+move __createfile powershell.ps1
+waithidden { pathname of file ((it as string) of value "Path" of key "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\PowerShell\1\ShellIds\Microsoft.PowerShell" of native registry) } -ExecutionPolicy Bypass -File powershell.ps1</ActionScript>
+			<SuccessCriteria Option="RunToCompletion"></SuccessCriteria>
+		</DefaultAction>
+	</Fixlet>
+</BES>
