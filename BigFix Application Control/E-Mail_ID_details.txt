@@ -1,3 +1,0 @@
-SRAWIDBSQLP008, 545986877, "nikhilra@hcl.com"
-SRAWIDBSQLP007, 1086461590, "nikhilra@hcl-software.com"
-SRAWIDBSQLP006, 1622119742, "shabirahmad.magray@hcl-software.com"
