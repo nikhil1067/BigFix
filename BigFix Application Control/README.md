@@ -9,8 +9,8 @@ This process involves uploading required files to the BigFix site, generating an
 
 ### 1. **Upload Required Files**
    - Upload the following files to the `Files` section of your BigFix site:
-     - `Email-IDDetails`
-     - `Whitelisted Application Details`
+     - `E-Mail-ID_details.txt`
+     - `Whitelisted_Applications.txt`
 
 ### 2. **Distribute Files to Clients**
    - Ensure the uploaded files are sent to all BigFix clients.
@@ -34,7 +34,7 @@ If email notifications are required:
    - Deploy the `Data Compilation` fixlet to compile the required data for notifications.
 
 2. **Send Email Notifications**
-   - Deploy the `Send Email Notification` fixlet to send notifications to the specified recipients.
+   - Deploy the `Send Advisory Notification to Server Owners` fixlet to send notifications to the specified recipients.
 
 ---
 
