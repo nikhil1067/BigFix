@@ -9,7 +9,7 @@ This process involves uploading required files to the BigFix site, generating an
 
 ### 1. **Upload Required Files**
    - Upload the following files to the `Files` section of your BigFix site:
-     - `E-Mail-ID_details.txt`
+     - `E-Mail_ID_details.txt`
      - `Whitelisted_Applications.txt`
 
 ### 2. **Distribute Files to Clients**
