@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<BES xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="BES.xsd">
+	<Fixlet>
+		<Title>Terminate Processes</Title>
+		<Description><![CDATA[
+<STYLE>
+    .form-group {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+        margin-top: 10px;
+    }
+    .form-group label {
+        width: 150px; /* Fixed width for labels */
+        text-align: right; /* Align label text to the right */
+        margin-right: 10px; /* Space between label and input */
+    }
+    .form-group input, .form-group select {
+        width: 300px; /* Fixed width for input boxes */
+        padding: 5px; /* Add some padding for better appearance */
+        box-sizing: border-box; /* Ensure padding doesn't affect the total width */
+    }
+</STYLE>
+
+<P><LABEL for=secret><STRONG><FONT color=#008000 size=3>Customization Options</FONT></STRONG> </LABEL></P>
+<P>Enter names of the processes that you want to terminate in a comma-separated manner for e.g., (notepad++.exe, chrome.exe)</P>
+<DIV class=form-group><LABEL for=processes>Process Names</LABEL> <INPUT id=processes name=processes> </DIV><script>
+    document.body.ontakeaction = function() {
+        var theprocesses = document.getElementById("processes").value;
+
+        if (!theprocesses) {
+            alert("Hey, you forgot to enter the processes names!");
+        } else {
+            TakeSecureFixletAction(Relevance('id of current fixlet'), 
+                Relevance('id of current bes site'), 
+                "Action1", {}, { 
+                    "processes": theprocesses
+                });
+        }
+        return false;
+    }
+</script> 
+<BLOCKQUOTE></BLOCKQUOTE>]]></Description>
+		<Relevance>true</Relevance>
+		<Category></Category>
+		<Source>Internal</Source>
+		<SourceID></SourceID>
+		<SourceReleaseDate>2024-12-19</SourceReleaseDate>
+		<SourceSeverity></SourceSeverity>
+		<CVENames></CVENames>
+		<SANSID></SANSID>
+		<MIMEField>
+			<Name>x-fixlet-modification-time</Name>
+			<Value>Thu, 19 Dec 2024 17:20:27 +0000</Value>
+		</MIMEField>
+		<Domain>BESC</Domain>
+		<DefaultAction ID="Action1">
+			<Description>
+				<PreLink>Click </PreLink>
+				<Link>here</Link>
+				<PostLink> to deploy this action.</PostLink>
+			</Description>
+			<ActionScript MIMEType="application/x-Fixlet-Windows-Shell"><![CDATA[action uses wow64 redirection false
+
+parameter "BESClient_Folder" = "{(value "EnterpriseClientFolder" of keys "HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\BigFix\EnterpriseClient" of native registry) as string}"
+parameter "Output_Folder" = "{(parameter "BESClient_Folder") & "BigFix Application Control"}"
+
+if {not exists folder (parameter "Output_Folder")}
+folder create "{parameter "Output_Folder"}"
+endif
+
+delete __createfile
+
+createfile until END_OF_FILE
+
+# Define the folder for storing logs
+$logFolder = "{parameter "Output_Folder"}\Terminated_Processes\Logs"
+
+# Prompt the user to input comma-separated process names
+$processInput = "{parameter "processes"}"
+
+# Check if the log folder exists, create it if it doesn't
+if (-not (Test-Path -Path $logFolder)) {{
+    Write-Host "Log folder not found. Creating log folder at $logFolder."
+    New-Item -Path $logFolder -ItemType Directory -Force | Out-Null
+}
+
+# Generate the log file path with the current date
+$logFile = Join-Path -Path $logFolder -ChildPath "$(Get-Date -Format 'yyyyMMdd').log"
+
+# Function to write detailed logs with timestamps
+function Write-Log {{
+    param (
+        [string]$message
+    )
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $logMessage = "$timestamp - $message"
+    Write-Host $logMessage
+    Add-Content -Path $logFile -Value $logMessage
+}
+
+# Log script start
+Write-Log "Script started."
+
+# Split the input into an array of process names
+$processNames = $processInput -split ","
+
+# Remove any leading or trailing whitespace from each process name
+$processNames = $processNames | ForEach-Object {{ $_.Trim() }
+
+# Track terminated processes
+$terminatedProcesses = @()
+
+# Loop through the provided process names
+foreach ($processName in $processNames) {{
+    Write-Log "Checking for process: $processName."
+
+    # Get processes using WMI (Win32_Process)
+    $matchedProcesses = Get-WmiObject -Query "SELECT * FROM Win32_Process WHERE Name = '$processName'" -ErrorAction SilentlyContinue
+
+    if ($matchedProcesses) {{
+        Write-Log "Processes found for: $processName."
+
+        foreach ($process in $matchedProcesses) {{
+            Write-Log "Terminating process: $($process.Name) (ProcessID: $($process.ProcessId))."
+
+            try {{
+                $process.Terminate() | Out-Null
+                Write-Log "Process $($process.Name) (ProcessID: $($process.ProcessId)) terminated successfully."
+                $terminatedProcesses += $process.Name
+            } catch {{
+                Write-Log "Error terminating process $($process.Name) (ProcessID: $($process.ProcessId)): $_"
+            }
+        }
+    } else {{
+        Write-Log "No running processes found for: $processName."
+    }
+}
+
+# Log the summary of terminated processes
+if ($terminatedProcesses.Count -gt 0) {{
+    Write-Log "Summary: Terminated processes: $($terminatedProcesses -join ', ')."
+} else {{
+    Write-Log "No processes were terminated."
+}
+
+Write-Log "Script completed."
+
+END_OF_FILE
+
+delete powershell.ps1
+move __createfile powershell.ps1
+
+waithidden "{pathname of file ((it as string) of value "Path" of key "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\PowerShell\1\ShellIds\Microsoft.PowerShell" of native registry)}" -ExecutionPolicy Bypass -File "powershell.ps1"]]></ActionScript>
+			<SuccessCriteria Option="RunToCompletion"></SuccessCriteria>
+		</DefaultAction>
+	</Fixlet>
+</BES>

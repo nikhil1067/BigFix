@@ -1,0 +1,19 @@
+Category,Application,Executable
+Ransomware,WannaCry,wannacry.exe
+Ransomware,Locky,locky.exe
+Ransomware,REvil,revil.exe
+Spyware/Keyloggers,RedLine Stealer,redline.exe
+Spyware/Keyloggers,Agent Tesla,agent_tesla.exe
+Spyware/Keyloggers,KeyBase,keybase.exe
+Adware,BonziBuddy,bonzibuddy.exe
+Adware,Fireball,fireball.exe
+Remote Access Trojans (RATs),DarkComet,darkcomet.exe
+Remote Access Trojans (RATs),njRAT,njrat.exe
+Remote Access Trojans (RATs),Remcos,remcos.exe
+Cryptojackers,CoinMiner,coinminer.exe
+Cryptojackers,XMRig,xmrig.exe
+Trojan Horses,Zeus Trojan,zeus.exe
+Trojan Horses,Emotet,emotet.exe
+Trojan Horses,TrickBot,trickbot.exe
+Botnet Clients,Mirai Botnet,mirai.exe
+Botnet Clients,QakBot,qakbot.exe
