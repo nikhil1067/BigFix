@@ -1,0 +1,136 @@
+Microsoft SQL Server 2019 (64-bit)                                                      
+Microsoft SQL Server 2019 (64-bit)                                                      
+WinRAR 7.01 (64-bit)                                                                    
+SQL Server 2017 Client Tools Extensions                                                 
+Microsoft ODBC Driver 17 for SQL Server                                                 
+SQL Server 2019 Common Files                                                            
+SQL Server 2017 Shared Management Objects                                               
+Microsoft SQL Server 2019 Setup (English)                                               
+Microsoft Visual C++ 2022 X64 Additional Runtime - 14.38.33135                          
+SQL Server Management Studio for Reporting Services                                     
+SQL Server 2017 Client Tools Extensions                                                 
+SQL Server 2019 XEvent                                                                  
+SQL Server 2019 XEvent                                                                  
+VMware Tools                                                                            
+SQL Server 2019 SQL Diagnostics                                                         
+Microsoft VSS Writer for SQL Server 2019                                                
+SQL Server 2017 Batch Parser                                                            
+Microsoft SQL Server 2019 T-SQL Language Service                                        
+Microsoft Build Tools Language Resources 14.0 (amd64)                                   
+Microsoft SQL Server 2019 RsFx Driver                                                   
+SQL Server 2019 Common Files                                                            
+CrowdStrike Firmware Analysis                                                           
+SQL Server 2019 Database Engine Shared                                                  
+SQL Server 2019 Shared Management Objects                                               
+SQL Server 2019 Client Tools                                                            
+SQL Server 2017 Integration Services Scale Out Management Portal                        
+SQL Server 2017 Shared Management Objects                                               
+UniversalForwarder                                                                      
+Microsoft ODBC Driver 13 for SQL Server                                                 
+Splunk Enterprise                                                                       
+SQL Server 2019 DMF                                                                     
+Visual Studio 2015 Prerequisites - ENU Language Pack                                    
+SQL Server 2017 Connection Info                                                         
+SQL Server 2017 Shared Management Objects Extensions                                    
+Microsoft Build Tools 14.0 (amd64)                                                      
+SQL Server 2019 Shared Management Objects Extensions                                    
+SQL Server 2017 Integration Services Scale Out Management Portal                        
+Microsoft Visual C++ 2013 x64 Additional Runtime - 12.0.21005                           
+CrowdStrike Device Control                                                              
+SQL Server 2019 Connection Info                                                         
+Microsoft OLE DB Driver for SQL Server                                                  
+Microsoft System CLR Types for SQL Server 2017                                          
+Microsoft SQL Server 2012 Native Client                                                 
+SQL Server 2019 Client Tools                                                            
+SQL Server 2019 Database Engine Services                                                
+Microsoft Visual C++ 2013 x64 Minimum Runtime - 12.0.21005                              
+SQL Server 2019 Shared Management Objects                                               
+Microsoft Visual Studio Tools for Applications 2015 x64 Hosting Support                 
+SQL Server 2017 Connection Info                                                         
+Microsoft Visual C++ 2022 X64 Minimum Runtime - 14.38.33135                             
+CrowdStrike Sensor Platform                                                             
+SSMS Post Install Tasks                                                                 
+Microsoft SQL Server 2017 T-SQL Language Service                                        
+Microsoft Visual C++ 2015 x64 Debug Runtime - 14.0.23026                                
+SQL Server 2017 DMF                                                                     
+Microsoft Visual C++ 2013 x64 Debug Runtime - 12.0.21005                                
+SQL Server 2017 Shared Management Objects Extensions                                    
+SQL Server Management Studio for Analysis Services                                      
+SQL Server 2019 Shared Management Objects Extensions                                    
+Microsoft Analysis Services OLE DB Provider                                             
+SQL Server 2019 Batch Parser                                                            
+SQL Server 2017 DMF                                                                     
+BigFix Server                                                                           
+SQL Server 2019 Database Engine Shared                                                  
+SQL Server 2019 Client Tools Extensions                                                 
+Visual Studio 2015 Prerequisites                                                        
+SQL Server 2017 SQL Diagnostics                                                         
+SQL Server 2019 Database Engine Services                                                
+SQL Server 2019 Client Tools Extensions                                                 
+SQL Server Management Studio                                                            
+SQL Server Management Studio                                                            
+SQL Server 2019 DMF                                                                     
+SQL Server 2019 Connection Info                                                         
+BigFix Installation Generator                                                           
+BigFix Server                                                                           
+Microsoft Help Viewer 2.2                                                               
+Microsoft SQL Server 2017                                                               
+Microsoft SQL Server 2017                                                               
+Microsoft Visual Studio 2015 Shell (Minimum)                                            
+Microsoft Visual Studio Tools for Applications 2015 Language Support - ENU Language Pack
+BigFix Console                                                                          
+Microsoft Visual Studio 2015 XAML Designer                                              
+Microsoft Visual Studio Tools for Applications 2015 x86 Hosting Support                 
+Microsoft Visual C++ 2013 x86 Minimum Runtime - 12.0.21005                              
+ Tools for .Net 3.5                                                                     
+Microsoft .NET Framework 4.5.1 SDK                                                      
+Microsoft SQL Server 2017 Policies                                                      
+Microsoft SQL Server 2014 Management Objects                                            
+Microsoft .NET Framework 4.5.2 Multi-Targeting Pack (ENU)                               
+Update for Microsoft Visual Studio 2015 (KB3095681)                                     
+BigFix Installation Generator                                                           
+Microsoft Visual C++ 2015 x86 Debug Runtime - 14.0.23026                                
+Microsoft Visual C++ 2015-2022 Redistributable (x86) - 14.36.32532                      
+Microsoft Visual Studio 2015 Shell (Minimum) Interop Assemblies                         
+Microsoft Visual Studio 2015 Shell (Isolated) Resources                                 
+Microsoft .NET Framework 4.5 Multi-Targeting Pack                                       
+Microsoft Help Viewer 2.2                                                               
+Roslyn Language Services - x86                                                          
+Browser for SQL Server 2019                                                             
+SQL Server 2017 Management Studio Extensions                                            
+Microsoft .NET Framework 4.5.1 Multi-Targeting Pack                                     
+Roslyn Language Services - x86                                                          
+SQL Server 2017 Common Files                                                            
+Microsoft Visual Studio 2015 Shell (Isolated)                                           
+Microsoft System CLR Types for SQL Server 2014                                          
+Microsoft Visual C++ 2022 X86 Minimum Runtime - 14.36.32532                             
+Microsoft Visual C++ 2013 Redistributable (x64) - 12.0.21005                            
+Microsoft Visual Studio 2015 Shell (Minimum) Resources                                  
+Microsoft SQL Server Data-Tier Application Framework (x86)                              
+Microsoft Visual Studio Tools for Applications 2015 Language Support                    
+Microsoft SQL Server Management Studio - 17.9.1                                         
+Microsoft Visual Studio Services Hub                                                    
+Microsoft Build Tools Language Resources 14.0 (x86)                                     
+BigFix WebUI Service                                                                    
+BigFix Client                                                                           
+Microsoft Visual Studio Tools for Applications 2015                                     
+Microsoft .NET Framework 4.5.2 Multi-Targeting Pack                                     
+Microsoft Visual Studio Tools for Applications 2015 Language Support                    
+Microsoft Visual Studio Tools for Applications 2015 Language Support Finalizer          
+Microsoft Visual C++ 2022 X86 Additional Runtime - 14.36.32532                          
+Microsoft Visual C++ 2015-2022 Redistributable (x64) - 14.38.33135                      
+CrowdStrike Windows Sensor                                                              
+Microsoft Visual C++ 2013 Redistributable (x86) - 12.0.21005                            
+Microsoft .NET Framework 4 Multi-Targeting Pack                                         
+Update for  (KB2504637)                                                                 
+Microsoft Build Tools 14.0 (x86)                                                        
+SQL Server 2017 Common Files                                                            
+Microsoft Visual Studio 2015 Shell (Isolated)                                           
+Microsoft .NET Framework 4.5.1 Multi-Targeting Pack (ENU)                               
+Microsoft Visual Studio 2015 XAML Designer - ENU                                        
+Microsoft Visual C++ 2013 x86 Debug Runtime - 12.0.21005                                
+SQL Server 2017 Management Studio Extensions                                            
+Microsoft Analysis Services OLE DB Provider                                             
+Microsoft Visual C++ 2013 x86 Additional Runtime - 12.0.21005                           
+Microsoft Visual Studio Tools for Applications 2015 Finalizer                           
+Postman x86_64 11.23.3                                                                  
