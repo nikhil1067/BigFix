@@ -1,4 +1,4 @@
-def main(provide_credentials=False, init=False, provide_proxy_credentials=False, reset=False):
+def main(provide_credentials=False, init=False, provide_proxy_credentials=False, reset=False, dataflow_filter=None):
     from logger import logger
     from utils.generate_hash_value import CryptoServices
     from credentials_manager.crypto_services import CredentialManager
@@ -122,18 +122,32 @@ def main(provide_credentials=False, init=False, provide_proxy_credentials=False,
             dataflows_properties[dataflow_name] = properties_dict
         else:
             dataflows_properties[dataflow_name] = None
+    print("Available dataflows:", list(dataflows_properties.keys()))
+    print("Requested dataflow:", dataflow_filter)
+    # Integrating logic for multiple schedules
+    if dataflow_filter:
+        # Skip all dataflows except the one specified
+        for df_name in list(dataflows_properties.keys()):
+            if df_name != dataflow_filter:
+                dataflows_properties.pop(df_name)
+    print("Available dataflows:", list(dataflows_properties.keys()))
+    
+    # Dataflow check
+    if "Transfer Asset Data from ServiceExchange to Bigfix" in dataflows_properties:
+        bigfix_properties_sx_to_bf = dataflows_properties["Transfer Asset Data from ServiceExchange to Bigfix"]["BigFixRestAPI"]
+        sx_properties_sx_to_bf = dataflows_properties["Transfer Asset Data from ServiceExchange to Bigfix"]["ServiceExchangeAPI"]
+    else:
+        dataflows_properties["Transfer Asset Data from ServiceExchange to Bigfix"] = None
+        bigfix_properties_sx_to_bf = None
+        sx_properties_sx_to_bf = None
 
-    # Dataflow properties - ServiceExchange to BigFix
-    bigfix_properties_sx_to_bf = dataflows_properties["Transfer Asset Data from ServiceExchange to Bigfix"]["BigFixRestAPI"] if dataflows_properties["Transfer Asset Data from ServiceExchange to Bigfix"] else None
-    print(bigfix_properties_sx_to_bf)
-    sx_properties_sx_to_bf = dataflows_properties["Transfer Asset Data from ServiceExchange to Bigfix"]["ServiceExchangeAPI"] if dataflows_properties["Transfer Asset Data from ServiceExchange to Bigfix"] else None
-    print(sx_properties_sx_to_bf)
-
-    # Dataflow properties - BigFix to ServiceExchange
-    bigfix_properties_bf_to_sx = dataflows_properties["Transfer Asset Data from Bigfix to ServiceExchange"]["BigFixRestAPI"] if dataflows_properties["Transfer Asset Data from Bigfix to ServiceExchange"] else None
-    print(bigfix_properties_bf_to_sx)
-    sx_properties_bf_to_sx = dataflows_properties["Transfer Asset Data from Bigfix to ServiceExchange"]["ServiceExchangeAPI"] if dataflows_properties["Transfer Asset Data from Bigfix to ServiceExchange"] else None
-    print(sx_properties_bf_to_sx)
+    if "Transfer Asset Data from Bigfix to ServiceExchange" in dataflows_properties:
+        bigfix_properties_bf_to_sx = dataflows_properties["Transfer Asset Data from Bigfix to ServiceExchange"]["BigFixRestAPI"]
+        sx_properties_bf_to_sx = dataflows_properties["Transfer Asset Data from Bigfix to ServiceExchange"]["ServiceExchangeAPI"]
+    else:
+        dataflows_properties["Transfer Asset Data from Bigfix to ServiceExchange"] = None
+        bigfix_properties_bf_to_sx = None
+        sx_properties_bf_to_sx = None
 
     record_limit = SETTINGS["record_limit_per_page"]
     # Retrieve credentials and Initialize API Handlers
@@ -181,6 +195,7 @@ def main(provide_credentials=False, init=False, provide_proxy_credentials=False,
         else:
             logger.error("BigFix Connection Validation Failed!")
             print("BigFix Connection Validation Failed!")
+            exit(100)
         sx_test_connection = sx_api.validate_connection()
         if sx_test_connection == 200:
             logger.info("ServiceExchange Connection Validation Completed successfully!")
@@ -188,8 +203,26 @@ def main(provide_credentials=False, init=False, provide_proxy_credentials=False,
         else:
             logger.error("ServiceExchange Connection Validation Failed!")
             print("ServiceExchange Connection Validation Failed!")
-        return
+            exit(100)
     
+    # Handle connection tests
+    bigfix_test_connection = bigfix_api.validate_connection()
+    if bigfix_test_connection == 200:
+        logger.info("BigFix Connection Validation Completed successfully!")
+        print("BigFix Connection Validation Completed successfully!")
+    else:
+        logger.error("BigFix Connection Validation Failed!")
+        print("BigFix Connection Validation Failed!")
+        exit(100)
+    sx_test_connection = sx_api.validate_connection()
+    if sx_test_connection == 200:
+        logger.info("ServiceExchange Connection Validation Completed successfully!")
+        print("ServiceExchange Connection Validation Completed successfully!")
+    else:
+        logger.error("ServiceExchange Connection Validation Failed!")
+        print("ServiceExchange Connection Validation Failed!")
+        exit(100)
+
     mailbox_manager = MailboxManager(bigfix_connection, bigfix_username, bigfix_password, unique_hash)
     properties = PropertiesExtractor(config_path)
     cache = CacheManager(cache_path)
@@ -207,6 +240,127 @@ def main(provide_credentials=False, init=False, provide_proxy_credentials=False,
         dataflow_root = (ET.parse(config_path)).getroot()
         
         ############# Processing DataFlow #############
+        ############# Transfer Asset Data from ServiceExchange to Bigfix #############
+        if dataflows_properties['Transfer Asset Data from ServiceExchange to Bigfix']:
+            correlated_data = None
+            logger.info("Fetching data from SX...")
+            sx_data = sx_api.get_computer_data() or []
+            print(sx_data)
+            
+            if not bigfix_data or not sx_data:
+                logger.error("Data not available to correlate.")
+                exit(100)
+            
+            # Extract mappings from BigFix property names to display names
+            bf_mappings = {}
+            for dataflow in dataflow_root.findall(".//dataflow[@displayname='Transfer Asset Data from ServiceExchange to Bigfix']"):
+                for targetadapter in dataflow.findall(".//targetadapter[@displayname='Bigfix Adapter']"):
+                    for property_tag in targetadapter.findall(".//device_properties/*"):
+                        display_name = property_tag.attrib["displayname"]
+                        backend_name = property_tag.attrib["propertyname"]
+                        bf_mappings[backend_name] = display_name
+
+            # Convert BigFix data to the required format
+            bigfix_data_sx_to_bf = []
+            for entry in bigfix_data:
+                formatted_entry = {bf_mappings[key]: value for key, value in entry.items() if key in bf_mappings}
+                bigfix_data_sx_to_bf.append(formatted_entry)
+            print(bigfix_data_sx_to_bf)
+            
+            # Extract mappings from SX property names to display names
+            sx_mappings = {}
+            for dataflow in dataflow_root.findall(".//dataflow[@displayname='Transfer Asset Data from ServiceExchange to Bigfix']"):
+                for sourceadapter in dataflow.findall(".//sourceadapter[@displayname='ServiceExchange Adapter']"):
+                    for property_tag in sourceadapter.findall(".//device_properties/*"):
+                        display_name = property_tag.attrib["displayname"]
+                        backend_name = property_tag.attrib["propertyname"]
+                        sx_mappings[backend_name] = display_name
+
+            # Convert ServiceExchange data to the required format
+            sx_data_sx_to_bf = []
+            for entry in sx_data:
+                formatted_entry = {sx_mappings[key]: value for key, value in entry.items() if key in sx_mappings}
+                sx_data_sx_to_bf.append(formatted_entry)
+            print(sx_data_sx_to_bf)
+
+            sx_to_bf_cache = cache.load_from_cache('sx_to_bf') or {}
+			
+            cached_bigfix_data = sx_to_bf_cache.get("bigfix_data", [])
+            new_bigfix_data = [data for data in bigfix_data_sx_to_bf if data not in cached_bigfix_data]
+            print(new_bigfix_data)
+
+            cached_sx_data = sx_to_bf_cache.get("sx_data", [])
+            new_sx_data = [data for data in sx_data_sx_to_bf if data not in cached_sx_data]
+            print(new_sx_data)
+			
+            sx_to_bf_cache = {
+                'bigfix_data': bigfix_data_sx_to_bf,
+				'sx_data': sx_data_sx_to_bf
+            }
+            
+            cache.save_to_cache('sx_to_bf', sx_to_bf_cache)
+            
+            if not new_bigfix_data or not new_sx_data:
+                logger.info("No new or changed data in BigFix/ServiceExchange to process.")
+                print("No new or changed data in BigFix/ServiceExchange to process.")
+                exit(0)
+
+            logger.info("Sending new Service Exchange data to BigFix data ...")
+            identity_properties = DataCorrelation.parse_identity_properties(config_path)
+            print(identity_properties)
+            
+            # Parse XML and extract mappings
+            root = (ET.parse(config_path)).getroot()
+
+            correlated_data = DataCorrelation.correlate(bigfix_data=new_bigfix_data, sx_data=new_sx_data, bigfix_properties=dataflows_properties['Transfer Asset Data from ServiceExchange to Bigfix']['BigFixRestAPI'], sx_properties=dataflows_properties['Transfer Asset Data from ServiceExchange to Bigfix']['ServiceExchangeAPI'], identity_properties=identity_properties)
+            ####################################################
+            print(correlated_data)
+            
+            if correlated_data:
+                if preview_only:
+                    # **Determine indentation automatically**
+                    indent_value = 4 if len(correlated_data) <= 10 else 0
+
+                    # Write JSON output to a file
+                    output_filename = "Preview_Records_SXtoBF.json"
+                    with open(output_filename, "w", encoding="utf-8") as json_file:
+                        json.dump(correlated_data, json_file, separators=(",", ":"))
+                    
+                    logger.info(f"JSON output saved to {output_filename} with indentation level {indent_value}.")
+                    print(f"JSON output saved to {output_filename} with indentation level {indent_value}.")
+                    return
+                else:
+                    logger.info("Creating BigFix analysis...")
+                    print("Creating BigFix analysis...")
+                    analysis_name = "ServiceExchange Custom Properties"
+                    analysis_description = "Analysis of correlated data between BigFix and ServiceExchange systems."
+                    root = (ET.parse(config_path)).getroot()
+                    property_names = [p.attrib["displayname"] for p in root.find(".//sourceadapter/device_properties").findall("*")] + [p.attrib["displayname"] for p in root.find(".//targetadapter/device_properties").findall("property")]
+                    logger.info(f"Properties in Analysis: {property_names}")
+                    print(property_names)
+                    extracted_properties = analysis_manager.get_properties(property_names)
+                    payload = analysis_manager.generate_analysis_payload(analysis_name, analysis_description, extracted_properties)
+
+                    analysis_id = analysis_manager.get_analysis_id()
+                    if analysis_id:
+                        analysis_manager.put_analysis(analysis_id, payload)
+                    else:
+                        analysis_manager.post_analysis(payload)
+
+                    for record in correlated_data:
+                        payload = ",".join(str(record.get(prop, "")).replace(",", ";") for prop in property_names)
+                        print(payload)
+                        logger.info(payload)
+                        bigfix_ID_propName = next((p.attrib["displayname"] for p in root.find(".//dataflow[@displayname='Transfer Asset Data from ServiceExchange to Bigfix']/.//targetadapter[@displayname='Bigfix Adapter']").findall(".//device_properties/*") if p.attrib.get("propertyname") == "ID"), None)
+                        computer_id = record.get(bigfix_ID_propName)
+                        mailbox_manager.process_and_delete_cmdb_files(computer_id)
+                        response = mailbox_manager.post_file(payload, computer_id)
+                        if response and response.status_code == 200:
+                            logger.info(f"Data for computer ID {computer_id} pushed successfully.")
+                        else:
+                            logger.error(f"Failed to push data for computer ID {computer_id}. Response: {response}")
+            else:
+                logger.info("No correlation found between BigFix and ServiceExchange Computer Data.")
         ############# Transfer Asset Data from Bigfix to ServiceExchange #############
         if dataflows_properties['Transfer Asset Data from Bigfix to ServiceExchange']:
             
@@ -316,128 +470,6 @@ def main(provide_credentials=False, init=False, provide_proxy_credentials=False,
                     return
 
                 sx_api.post_computer_details(new_bigfix_data)
-        
-        ############# Transfer Asset Data from ServiceExchange to Bigfix #############
-        if dataflows_properties['Transfer Asset Data from ServiceExchange to Bigfix']:
-            correlated_data = None
-            logger.info("Fetching data from SX...")
-            sx_data = sx_api.get_computer_data() or []
-            print(sx_data)
-            
-            if not bigfix_data or not sx_data:
-                logger.error("Data not available to correlate.")
-                exit(100)
-            
-            # Extract mappings from BigFix property names to display names
-            bf_mappings = {}
-            for dataflow in dataflow_root.findall(".//dataflow[@displayname='Transfer Asset Data from ServiceExchange to Bigfix']"):
-                for targetadapter in dataflow.findall(".//targetadapter[@displayname='Bigfix Adapter']"):
-                    for property_tag in targetadapter.findall(".//device_properties/*"):
-                        display_name = property_tag.attrib["displayname"]
-                        backend_name = property_tag.attrib["propertyname"]
-                        bf_mappings[backend_name] = display_name
-
-            # Convert BigFix data to the required format
-            bigfix_data_sx_to_bf = []
-            for entry in bigfix_data:
-                formatted_entry = {bf_mappings[key]: value for key, value in entry.items() if key in bf_mappings}
-                bigfix_data_sx_to_bf.append(formatted_entry)
-            print(bigfix_data_sx_to_bf)
-            
-            # Extract mappings from SX property names to display names
-            sx_mappings = {}
-            for dataflow in dataflow_root.findall(".//dataflow[@displayname='Transfer Asset Data from ServiceExchange to Bigfix']"):
-                for sourceadapter in dataflow.findall(".//sourceadapter[@displayname='ServiceExchange Adapter']"):
-                    for property_tag in sourceadapter.findall(".//device_properties/*"):
-                        display_name = property_tag.attrib["displayname"]
-                        backend_name = property_tag.attrib["propertyname"]
-                        sx_mappings[backend_name] = display_name
-
-            # Convert ServiceExchange data to the required format
-            sx_data_sx_to_bf = []
-            for entry in sx_data:
-                formatted_entry = {sx_mappings[key]: value for key, value in entry.items() if key in sx_mappings}
-                sx_data_sx_to_bf.append(formatted_entry)
-            print(sx_data_sx_to_bf)
-
-            sx_to_bf_cache = cache.load_from_cache('sx_to_bf') or {}
-			
-            cached_bigfix_data = sx_to_bf_cache.get("bigfix_data", [])
-            new_bigfix_data = [data for data in bigfix_data_sx_to_bf if data not in cached_bigfix_data]
-            print(new_bigfix_data)
-
-            cached_sx_data = sx_to_bf_cache.get("sx_data", [])
-            new_sx_data = [data for data in sx_data_sx_to_bf if data not in cached_sx_data]
-            print(new_sx_data)
-			
-            sx_to_bf_cache = {
-                'bigfix_data': bigfix_data_sx_to_bf,
-				'sx_data': sx_data_sx_to_bf
-            }
-            
-            cache.save_to_cache('sx_to_bf', sx_to_bf_cache)
-            
-            if not new_bigfix_data or not new_sx_data:
-                logger.info("No new or changed data in BigFix/ServiceExchange to process.")
-                print("No new or changed data in BigFix/ServiceExchange to process.")
-                exit(0)
-
-            logger.info("Sending new Service Exchange data to BigFix data ...")
-            identity_properties = DataCorrelation.parse_identity_properties(config_path)
-            print(identity_properties)
-            
-            # Parse XML and extract mappings
-            root = (ET.parse(config_path)).getroot()
-
-            correlated_data = DataCorrelation.correlate(bigfix_data=new_bigfix_data, sx_data=new_sx_data, bigfix_properties=dataflows_properties['Transfer Asset Data from ServiceExchange to Bigfix']['BigFixRestAPI'], sx_properties=dataflows_properties['Transfer Asset Data from ServiceExchange to Bigfix']['ServiceExchangeAPI'], identity_properties=identity_properties)
-        ####################################################
-            print(correlated_data)
-            
-            if correlated_data:
-                if preview_only:
-                    # **Determine indentation automatically**
-                    indent_value = 4 if len(correlated_data) <= 10 else 0
-
-                    # Write JSON output to a file
-                    output_filename = "Preview_Records_SXtoBF.json"
-                    with open(output_filename, "w", encoding="utf-8") as json_file:
-                        json.dump(correlated_data, json_file, separators=(",", ":"))
-                    
-                    logger.info(f"JSON output saved to {output_filename} with indentation level {indent_value}.")
-                    print(f"JSON output saved to {output_filename} with indentation level {indent_value}.")
-                    return
-                else:
-                    logger.info("Creating BigFix analysis...")
-                    print("Creating BigFix analysis...")
-                    analysis_name = "ServiceExchange Custom Properties"
-                    analysis_description = "Analysis of correlated data between BigFix and ServiceExchange systems."
-                    root = (ET.parse(config_path)).getroot()
-                    property_names = [p.attrib["displayname"] for p in root.find(".//sourceadapter/device_properties").findall("*")] + [p.attrib["displayname"] for p in root.find(".//targetadapter/device_properties").findall("property")]
-                    logger.info(f"Properties in Analysis: {property_names}")
-                    print(property_names)
-                    extracted_properties = analysis_manager.get_properties(property_names)
-                    payload = analysis_manager.generate_analysis_payload(analysis_name, analysis_description, extracted_properties)
-
-                    analysis_id = analysis_manager.get_analysis_id()
-                    if analysis_id:
-                        analysis_manager.put_analysis(analysis_id, payload)
-                    else:
-                        analysis_manager.post_analysis(payload)
-
-                    for record in correlated_data:
-                        payload = ",".join(str(record.get(prop, "")).replace(",", ";") for prop in property_names)
-                        print(payload)
-                        logger.info(payload)
-                        bigfix_ID_propName = next((p.attrib["displayname"] for p in root.find(".//dataflow[@displayname='Transfer Asset Data from ServiceExchange to Bigfix']/.//targetadapter[@displayname='Bigfix Adapter']").findall(".//device_properties/*") if p.attrib.get("propertyname") == "ID"), None)
-                        computer_id = record.get(bigfix_ID_propName)
-                        mailbox_manager.process_and_delete_cmdb_files(computer_id)
-                        response = mailbox_manager.post_file(payload, computer_id)
-                        if response and response.status_code == 200:
-                            logger.info(f"Data for computer ID {computer_id} pushed successfully.")
-                        else:
-                            logger.error(f"Failed to push data for computer ID {computer_id}. Response: {response}")
-            else:
-                logger.info("No correlation found between BigFix and ServiceExchange Computer Data.")
     except Exception as e:
         logger.error(f"Error during processing: {e}")
 

@@ -1,11 +1,35 @@
 <?xml version='1.0' encoding='utf-8'?>
-<dataflowconfig xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="DataflowsConfig.xsd" uniquehash="8e89c0287085a4d75c76c6a1dc53cb0896fec3e2">
+<dataflowconfig xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="DataflowsConfig.xsd" uniquehash="94a7ea093f092cb63fbd85d8624cf00c46c1017f">
 	<datasources>
 		<datasource datasourcename="BigFixRestAPI" connectionstring="https://10.1.160.143:52311" site="ServiceExchange CMDB Attributes" verifycert="false" username="bigfix" proxyurl="" proxyusername="" />
 		<datasource datasourcename="ServiceExchangeAPI" connectionstring="https://xsmtest.dryice-aws.com" tokenurl="https://xsmauth-test.dryice-aws.com/realms/SX-QA/protocol/openid-connect/token" verifycert="false" clientid="hindustan_unilever_limited" username="hclt_breakfixmanager@hclt.com" proxyurl="" proxyusername="" />
 	</datasources>
   	<dataflows>
-    <dataflow displayname="Transfer Asset Data from Bigfix to ServiceExchange" datatype="asset" schedule="PT1M">
+    <dataflow displayname="Transfer Asset Data from ServiceExchange to Bigfix" datatype="asset" schedule="PT1M">
+		<dataflowdescription />
+		<sourceadapter displayname="ServiceExchange Adapter" adapterclass="ServiceExchange" datasourcename="ServiceExchangeAPI">
+			<device_properties>
+				<property displayname="CI ID" propertyname="CI_ID" datatype="string" />
+				<property displayname="Company Name" propertyname="COMPANY_NAME" datatype="string" />
+				<property displayname="Department" propertyname="DEPARTMENT_NAME" datatype="string" />
+				<property displayname="Class Name" propertyname="CLASS_NAME" datatype="string" />
+				<property displayname="Serial Number" propertyname="SERIAL_NUMBER" datatype="string" />
+				<property displayname="Location" propertyname="LOCATION_NAME" datatype="string" />
+				<identityproperty displayname="CI Name" propertyname="CI_NAME" datatype="string" />
+				<identityproperty displayname="IP Address" propertyname="IP_ADDRESS" datatype="string" weight="20" />
+				<identityproperty displayname="MAC Address" propertyname="MAC_ADDRESS" datatype="string" weight="20" />
+			</device_properties>
+		</sourceadapter>
+		<targetadapter displayname="Bigfix Adapter" adapterclass="bigfix" datasourcename="BigFixRestAPI">
+			<device_properties>
+				<property displayname="BigFix Computer ID" propertyname="ID" datatype="string" />
+          		<identityproperty displayname="BigFix Computer Name" propertyname="Computer Name" datatype="string" />
+				<identityproperty displayname="IP Address" propertyname="IP Address" datatype="string" weight="20" />
+				<identityproperty displayname="MAC Address" propertyname="MAC Address" datatype="string" weight="20" />
+			</device_properties>
+		</targetadapter>
+	</dataflow>
+	<dataflow displayname="Transfer Asset Data from Bigfix to ServiceExchange" datatype="asset" schedule="PT10M">
 		<dataflowdescription />
 		<sourceadapter displayname="Bigfix Adapter" adapterclass="bigfix" datasourcename="BigFixRestAPI">
 			<device_properties>
@@ -17,9 +41,6 @@
 				<setting displayname="Company Name" propertyname="Company Name" datatype="string" />
 				<setting displayname="Class" propertyname="Class" datatype="string" />
 				<setting displayname="Type" propertyname="Type" datatype="string" />
-				<setting displayname="IN DMZ" propertyname="IN DMZ" datatype="string" />
-				<property displayname="BES Client First Report Time" propertyname="BES Client First Report Time" datatype="string" />
-				<property displayname="Location" propertyname="Location" datatype="string" />
 				<identityproperty displayname="IP Address" propertyname="IP Address" datatype="string" />
 				<identityproperty displayname="MAC Address" propertyname="MAC Address" datatype="string" />
 			</device_properties>
@@ -34,9 +55,6 @@
 				<property displayname="Company Name" propertyname="companyName" datatype="string" />
 				<property displayname="Class" propertyname="class" datatype="string" />
 				<property displayname="Type" propertyname="type" datatype="string" />
-				<property displayname="IN DMZ" propertyname="inDmz" datatype="string" />
-				<property displayname="BES Client First Report Time" propertyname="firstDiscoveredAt" datatype="string" />
-				<property displayname="Location" propertyname="location" datatype="string" />
 				<identityproperty displayname="IP Address" propertyname="ipAddress" datatype="string" />
 				<identityproperty displayname="MAC Address" propertyname="macAddress" datatype="string" />
 			</device_properties>

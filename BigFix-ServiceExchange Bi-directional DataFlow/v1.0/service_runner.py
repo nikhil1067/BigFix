@@ -72,11 +72,11 @@ def get_main_script_path():
     logger.info(f"Resolved base path for main.py: {base_path}")
     return os.path.join(base_path, "main.py")
 
-def execute_main_script(provide_credentials=False):
+def execute_main_script(provide_credentials=False, dataflow_filter=None):
     """Execute the main function from main.py."""
     try:
         start_time = datetime.now()
-        main(provide_credentials)
+        main(provide_credentials=provide_credentials, dataflow_filter=dataflow_filter)
         end_time = datetime.now()
         duration = (end_time - start_time).total_seconds()
         logger.info(f"Execution completed successfully.")
@@ -95,18 +95,19 @@ class PythonWindowsService(win32serviceutil.ServiceFramework):
         self.schedule = None
         self.next_run_time = None
 
-    def load_schedule_from_config(self):
+    def load_schedules_from_config(self):
         try:
             tree = ET.parse(config_path)
             root = tree.getroot()
-            schedule = root.find(".//setting[@key='SCHEDULE']").get("value")
-            logger.info(f"Loaded schedule from config: {schedule}")
-            return schedule
+            dataflows = root.findall(".//dataflows/dataflow")
+            schedules = {df.get("displayname"): df.get("schedule") for df in dataflows}
+            logger.info(f"Loaded per-dataflow schedules: {schedules}")
+            return schedules
         except Exception as e:
-            logger.error(f"Error loading schedule from config: {e}")
-            return None
+            logger.error(f"Error loading dataflow schedules: {e}")
+            return {}
 
-    def parse_iso8601_duration(self):
+    def parse_iso8601_duration(self, duration_str):
         """
         Parses an ISO 8601 duration string (e.g., 'PT15M', 'P1D', 'PT1H30M') and returns a timedelta object.
         
@@ -127,7 +128,7 @@ class PythonWindowsService(win32serviceutil.ServiceFramework):
             r")?"                     # Time part is optional
         )
         
-        match = re.fullmatch(pattern, self.schedule)
+        match = match = re.fullmatch(pattern, duration_str)
         if not match:
             raise ValueError(f"Invalid ISO 8601 duration format: {self.schedule}")
         
@@ -140,53 +141,69 @@ class PythonWindowsService(win32serviceutil.ServiceFramework):
         # Convert to timedelta
         return timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
 
-    def calculate_next_run_time(self):
-        """Calculate the next scheduled run time based on the ISO 8601 schedule."""
+    def calculate_next_run_time(self, schedule):
         try:
-            if self.schedule.lower() == "now":
+            if schedule.lower() == "now":
                 return datetime.now()
             else:
-                duration = self.parse_iso8601_duration()
+                duration = self.parse_iso8601_duration(schedule)
                 return datetime.now() + duration
         except Exception as e:
-            logger.error(f"Invalid schedule format: {self.schedule}. Error: {e}")
+            logger.error(f"Invalid schedule format: {schedule}. Error: {e}")
             return None
 
     def SvcDoRun(self):
-        logger.info("Service is starting.")
-        self.schedule = self.load_schedule_from_config()
-
-        if not self.schedule:
-            logger.error("No valid schedule found. Exiting.")
-            return
         try:
+            logger.info(">>> Entered SvcDoRun <<<")
+
+            self.dataflow_schedules = self.load_schedules_from_config()
+
+            if not self.dataflow_schedules:
+                logger.error("No valid dataflow schedules found. Exiting.")
+                return
+
+            # Set a fallback schedule (optional)
+            self.schedule = next(iter(self.dataflow_schedules.values()))
+            logger.info(f"Default schedule set: {self.schedule}")
+
             self.ReportServiceStatus(win32service.SERVICE_START_PENDING)
             logger.info("Reported SERVICE_START_PENDING.")
-            # Simulate long initialization with periodic updates
-            for i in range(10):  # Simulating a 10-second initialization with periodic updates
-                logger.info(f"Initialization step {i + 1}/10 in progress...")
-                time.sleep(1)  # Simulate work
+
+            # Simulate long initialization
+            for i in range(3):
+                logger.info(f"Initialization step {i+1}/3...")
+                time.sleep(1)
                 self.ReportServiceStatus(win32service.SERVICE_START_PENDING)
+
             self.ReportServiceStatus(win32service.SERVICE_RUNNING)
             logger.info("Service is now running.")
-            self.next_run_time = self.calculate_next_run_time()
-            execute_main_script()  # Execute the script on service start
-            self.next_run_time = self.calculate_next_run_time()
-            logger.info(f"Next scheduled run: {self.next_run_time}")
 
+            # First execution
+            self.next_run_times = {
+                name: self.calculate_next_run_time(schedule)
+                for name, schedule in self.dataflow_schedules.items()
+            }
+
+            logger.info(f"Scheduled times: {self.next_run_times}")
+            execute_main_script()
+
+            # Main loop
             while True:
                 result = win32event.WaitForSingleObject(self.hWaitStop, 1000)
                 if result == win32event.WAIT_OBJECT_0:
-                    logger.info("Service stop signal received.")
+                    logger.info("Stop signal received.")
                     break
 
-                if datetime.now() >= self.next_run_time:
-                    logger.info("Scheduled run time reached. Executing main.py.")
-                    execute_main_script()
-                    self.next_run_time = self.calculate_next_run_time()
-                    logger.info(f"Next scheduled run: {self.next_run_time}")
+                now = datetime.now()
+                for dataflow_name, next_run in self.next_run_times.items():
+                    if now >= next_run:
+                        logger.info(f"Executing scheduled dataflow: {dataflow_name}")
+                        execute_main_script(dataflow_filter=dataflow_name)
+                        self.next_run_times[dataflow_name] = self.calculate_next_run_time(
+                            self.dataflow_schedules[dataflow_name]
+                        )
         except Exception as e:
-            logger.error(f"Error in SvcDoRun: {e}")
+            logger.error(f"Fatal error in SvcDoRun: {e}")
             self.ReportServiceStatus(win32service.SERVICE_STOPPED)
 
     def SvcStop(self):
@@ -202,6 +219,7 @@ if __name__ == "__main__":
         parser.add_argument("--run", action="store_true", help="Run main.py directly")
         parser.add_argument("--provideproxycredentials", action="store_true", help="Provide Proxy Credentials"),
         parser.add_argument("--reset", action="store_true", help="Reset the CMDB hash in the XML config"),
+        parser.add_argument("--dataflow", type=str, help="Run a specific dataflow by display name"),
         parser.add_argument("action", nargs="?", choices=["install", "remove", "start", "stop", "restart"],
                         help="Service control actions (install, remove, start, stop, restart)", default=None)
         args = parser.parse_args()
@@ -225,7 +243,7 @@ if __name__ == "__main__":
                 logger.info("Schema initialization completed.")
             elif args.run:
                 logger.info("Dataflow job triggered on demand. Pipeline execution initiated.")
-                execute_main_script()
+                execute_main_script(dataflow_filter=args.dataflow)
             elif args.action:
                 logger.info(f"Service action initiated: {args.action}")
                 try:
