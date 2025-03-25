@@ -21,17 +21,15 @@ def main(provide_credentials=False, init=False, provide_proxy_credentials=False,
     from sys import exit
 
     # Load configuration
-    exe_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
-    config_path = os.path.join(exe_dir, "DataFlowsConfig.xml")
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    config_path = os.path.join(base_dir, "DataFlowsConfig.xml")
     tree = ET.parse(config_path)
     root = tree.getroot()
     SETTINGS = {setting.get('key'): setting.get('value') for setting in root.findall(".//settings/setting")}
-    logger.info(SETTINGS)
-    print(SETTINGS)
 
     # Define file paths
-    preview_records_path = os.path.join(exe_dir, "Preview_Records.csv")
-    cache_path = os.path.join(exe_dir, "RecordsCache.dat")
+    preview_records_path = os.path.join(base_dir, "Preview_Records.csv")
+    cache_path = os.path.join(base_dir, "RecordsCache.dat")
 
     # Generate a unique hash
     crypto_services = CryptoServices()
@@ -44,11 +42,11 @@ def main(provide_credentials=False, init=False, provide_proxy_credentials=False,
             os.remove(cache_path)
             print("Deleted RecordsCache.dat file.")
         return
+    
     # Read unique_hash from XML, if empty, generate a new one
     unique_hash = root.get("uniquehash", "").strip()
     if not unique_hash:
         unique_hash = crypto_services.generate_unique_hash(config_path=config_path)
-    print(f"Using CMDB Hash: {unique_hash}")
     
     # Check PREVIEW_ONLY setting
     preview_only = True if SETTINGS["preview_only"] == "True" else False
@@ -59,11 +57,7 @@ def main(provide_credentials=False, init=False, provide_proxy_credentials=False,
     config_writer = ConfigWriter(config_path)
 
     bigfix_config = root.find(".//datasources/datasource[@datasourcename='BigFixRestAPI']")
-    logger.info(bigfix_config)
-    print(bigfix_config)
     sx_config = root.find(".//datasources/datasource[@datasourcename='ServiceExchangeAPI']")
-    logger.info(sx_config)
-    print(sx_config)
 
     # Handle API credentials
     if provide_credentials:
@@ -95,6 +89,12 @@ def main(provide_credentials=False, init=False, provide_proxy_credentials=False,
         config_writer.write_username(section="ServiceExchangeAPI", field="proxyusername", username=sx_proxy_username)
         return
     
+    # Print and log results
+    logger.info(SETTINGS)
+    print(SETTINGS)
+    logger.info(f"Using CMDB Hash: {unique_hash}")
+    print(f"Using CMDB Hash: {unique_hash}")
+
     # List of dataflow names to extract properties for
     dataflow_names = [
         "Transfer Asset Data from ServiceExchange to Bigfix",
@@ -122,8 +122,9 @@ def main(provide_credentials=False, init=False, provide_proxy_credentials=False,
             dataflows_properties[dataflow_name] = properties_dict
         else:
             dataflows_properties[dataflow_name] = None
-    print("Available dataflows:", list(dataflows_properties.keys()))
     print("Requested dataflow:", dataflow_filter)
+    logger.info("Requested dataflow:", dataflow_filter)
+
     # Integrating logic for multiple schedules
     if dataflow_filter:
         # Skip all dataflows except the one specified
@@ -131,6 +132,7 @@ def main(provide_credentials=False, init=False, provide_proxy_credentials=False,
             if df_name != dataflow_filter:
                 dataflows_properties.pop(df_name)
     print("Available dataflows:", list(dataflows_properties.keys()))
+    logger.info("Available dataflows:", list(dataflows_properties.keys()))
     
     # Dataflow check
     if "Transfer Asset Data from ServiceExchange to Bigfix" in dataflows_properties:
@@ -188,6 +190,30 @@ def main(provide_credentials=False, init=False, provide_proxy_credentials=False,
 
     # Handle init operations
     if init:
+        try:
+            bigfix_test_connection = bigfix_api.validate_connection()
+            if bigfix_test_connection == 200:
+                logger.info("BigFix Connection Validation Completed successfully!")
+                print("BigFix Connection Validation Completed successfully!")
+            else:
+                logger.error("BigFix Connection Validation Failed!")
+                print("BigFix Connection Validation Failed!")
+                exit(100)
+            sx_test_connection = sx_api.validate_connection()
+            if sx_test_connection == 200:
+                logger.info("ServiceExchange Connection Validation Completed successfully!")
+                print("ServiceExchange Connection Validation Completed successfully!")
+            else:
+                logger.error("ServiceExchange Connection Validation Failed!")
+                print("ServiceExchange Connection Validation Failed!")
+                exit(100)
+            return
+        except Exception as e:
+            logger.error(f"Error during processing: {e}")
+            return
+    
+    # Handle connection tests
+    try:
         bigfix_test_connection = bigfix_api.validate_connection()
         if bigfix_test_connection == 200:
             logger.info("BigFix Connection Validation Completed successfully!")
@@ -204,24 +230,9 @@ def main(provide_credentials=False, init=False, provide_proxy_credentials=False,
             logger.error("ServiceExchange Connection Validation Failed!")
             print("ServiceExchange Connection Validation Failed!")
             exit(100)
-    
-    # Handle connection tests
-    bigfix_test_connection = bigfix_api.validate_connection()
-    if bigfix_test_connection == 200:
-        logger.info("BigFix Connection Validation Completed successfully!")
-        print("BigFix Connection Validation Completed successfully!")
-    else:
-        logger.error("BigFix Connection Validation Failed!")
-        print("BigFix Connection Validation Failed!")
-        exit(100)
-    sx_test_connection = sx_api.validate_connection()
-    if sx_test_connection == 200:
-        logger.info("ServiceExchange Connection Validation Completed successfully!")
-        print("ServiceExchange Connection Validation Completed successfully!")
-    else:
-        logger.error("ServiceExchange Connection Validation Failed!")
-        print("ServiceExchange Connection Validation Failed!")
-        exit(100)
+    except Exception as e:
+        logger.error(f"Error during processing: {e}")
+        return
 
     mailbox_manager = MailboxManager(bigfix_connection, bigfix_username, bigfix_password, unique_hash)
     properties = PropertiesExtractor(config_path)

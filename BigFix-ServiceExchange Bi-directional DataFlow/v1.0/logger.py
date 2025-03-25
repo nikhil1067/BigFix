@@ -53,8 +53,8 @@ class LogConfigManager:
 
 
 # Initialize the logger at the module level
-exe_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
-config_path = os.path.join(exe_dir, "DataFlowsConfig.xml")
+base_dir = os.path.dirname(os.path.abspath(__file__))
+config_path = os.path.join(base_dir, "DataFlowsConfig.xml")
 tree = ET.parse(config_path)
 root = tree.getroot()
 SETTINGS = {setting.get('key'): setting.get('value') for setting in root.findall(".//settings/setting")}
@@ -62,7 +62,7 @@ SETTINGS = {setting.get('key'): setting.get('value') for setting in root.findall
 # Retrieve settings for logging
 retention_days = int(SETTINGS["log_retention"])
 log_level = SETTINGS["log_level"]
-log_folder = os.path.join(exe_dir, "logs")  # Explicit log folder for main.py logs
+log_folder = os.path.join(base_dir, "logs")  # Explicit log folder for main.py logs
 
 # Initialize the LogConfigManager
 log_manager = LogConfigManager(retention_days, log_level, log_folder)
