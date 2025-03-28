@@ -1,0 +1,17 @@
+2025-03-28 19:58:28,368 - INFO - Service logger initialized.
+2025-03-28 19:58:28,384 - INFO - Service action initiated: install
+2025-03-28 19:58:35,938 - INFO - Service logger initialized.
+2025-03-28 19:58:35,956 - INFO - Service action initiated: start
+2025-03-28 19:58:37,598 - INFO - Service logger initialized.
+2025-03-28 19:58:37,598 - INFO - >>> Entered SvcDoRun <<<
+2025-03-28 19:58:37,600 - INFO - Loaded per-dataflow schedules: {'Transfer Asset Data from ServiceExchange to Bigfix': 'PT5M', 'Transfer Asset Data from Bigfix to ServiceExchange': 'PT30M'}
+2025-03-28 19:58:37,600 - INFO - Default schedule set: PT5M
+2025-03-28 19:58:37,600 - INFO - Reported SERVICE_START_PENDING.
+2025-03-28 19:58:37,600 - INFO - Initialization step 1/3...
+2025-03-28 19:58:38,606 - INFO - Initialization step 2/3...
+2025-03-28 19:58:39,607 - INFO - Initialization step 3/3...
+2025-03-28 19:58:40,608 - INFO - Service is now running.
+2025-03-28 19:58:40,609 - INFO - Scheduled times: {'Transfer Asset Data from ServiceExchange to Bigfix': '2025-03-28 20:03:40', 'Transfer Asset Data from Bigfix to ServiceExchange': '2025-03-28 20:28:40'}
+2025-03-28 19:58:41,192 - INFO - Retrieved credential for bigfix@bigfix_serviceexchange_dataflows_adapter via WinAPI
+2025-03-28 19:58:41,193 - INFO - Retrieved credential for hclt_breakfixmanager@hclt.com@bigfix_serviceexchange_dataflows_adapter via WinAPI
+2025-03-28 19:58:41,194 - INFO - Retrieved credential for hindustan_unilever_limited@bigfix_serviceexchange_dataflows_adapter via WinAPI

@@ -53,7 +53,12 @@ class LogConfigManager:
 
 
 # Initialize the logger at the module level
-base_dir = os.path.dirname(os.path.abspath(__file__))
+if getattr(sys, 'frozen', False):
+    # If the application is run as a bundle (PyInstaller)
+    base_dir = os.path.dirname(sys.executable)
+else:
+    # If run as a script
+    base_dir = os.path.dirname(os.path.abspath(__file__))
 config_path = os.path.join(base_dir, "DataFlowsConfig.xml")
 tree = ET.parse(config_path)
 root = tree.getroot()

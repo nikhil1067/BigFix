@@ -15,7 +15,13 @@ import time
 from threading import Thread
 from main import main
 
-base_dir = os.path.dirname(os.path.abspath(__file__))
+if getattr(sys, 'frozen', False):
+    # If the application is run as a bundle (PyInstaller)
+    base_dir = os.path.dirname(sys.executable)
+else:
+    # If run as a script
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+
 config_path = os.path.join(base_dir, "DataFlowsConfig.xml")
 
 def setup_service_logger():
@@ -54,12 +60,8 @@ def increase_service_timeout(timeout=60000):
 
 @staticmethod
 def get_main_script_path():
-    if hasattr(sys, '_MEIPASS'):
-        base_path = sys._MEIPASS
-    else:
-        base_path = os.path.dirname(os.path.abspath(__file__))
-    logger.info(f"Resolved base path for main.py: {base_path}")
-    return os.path.join(base_path, "main.py")
+    logger.info(f"Resolved base path for main.py: {base_dir}")
+    return os.path.join(base_dir, "main.py")
 
 def execute_main_script(dataflow_filter=None):
     try:
