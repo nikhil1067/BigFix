@@ -1,0 +1,4 @@
+isodate==0.7.2
+pywin32==308
+Requests==2.32.3
+urllib3==2.3.0
