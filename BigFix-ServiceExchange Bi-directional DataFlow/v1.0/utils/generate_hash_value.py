@@ -16,7 +16,7 @@ class CryptoServices:
         root = tree.getroot()
         
         # Generate a new hash based on the timestamp
-        unique_hash = hashlib.sha1(str(int(time.time())).encode('utf-8')).hexdigest()
+        unique_hash = hashlib.sha384(str(int(time.time())).encode('utf-8')).hexdigest()
         
         # Update the unique_hash attribute
         root.set("uniquehash", unique_hash)

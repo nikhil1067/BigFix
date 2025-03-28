@@ -5,19 +5,22 @@ from urllib.parse import urlencode, urlparse, parse_qs, urlunparse
 import xml.etree.ElementTree as ET
 from logger import logger
 import urllib3
+from datetime import datetime, timezone
+import isodate
 from utils.api_operations_template import APIRequest
 
 urllib3.disable_warnings()
 
 
 class SXAPIHandler:
-    def __init__(self, config_path, record_limit, base_url, username, password, proxy_url, proxy_username, proxy_password, verify, x_user_payload, sx_properties_sx_to_bf):
+    def __init__(self, config_path, record_limit, base_url, username, password, proxy_url, proxy_username, proxy_password, verify, x_user_payload, sx_properties_sx_to_bf, delta):
         self.config_path = config_path
         self.base_url = base_url
         self.headers = {
             'Content-Type': 'application/json',
             'x-user-payload': x_user_payload
         }
+        self.delta = delta
         self.username = username
         self.properties = sx_properties_sx_to_bf
         self.password = password
@@ -41,9 +44,28 @@ class SXAPIHandler:
             current_page = 1
             limit = self.record_limit
 
+            # Add technical attributes to headers
+            self.headers['fetchattribute'] = 'true'
+            
             # Parse the base URL and query parameters
             endpoint = "/cmdb/api/config_items/v2"
             params = {"page": 1, "limit": limit}
+
+            # Add header for delta data
+            if self.delta is not None:
+                now = datetime.now(timezone.utc)
+                delta = isodate.parse_duration(self.delta)
+                start = now - delta
+                # Format: MM-DD-YYYY
+                start_str = start.strftime("%m-%d-%Y")
+                end_str = now.strftime("%m-%d-%Y")
+                # Create JSON string for header
+                revamp_dict = {
+                    "updated_at": f"{start_str}&{end_str}"
+                }
+                revamp_header = json.dumps(revamp_dict)  # Makes it a valid JSON string
+                # Add it to headers
+                self.headers['revamp'] = revamp_header
 
             while True:
                 # Update the query parameters for pagination
@@ -63,7 +85,7 @@ class SXAPIHandler:
 
                 # Parse the JSON response
                 response_json = response.json()
-
+                
                 # Extract the data from the current page
                 page_data = self.parse_computer_details(response_json)
                 all_data.extend(page_data)
@@ -84,6 +106,7 @@ class SXAPIHandler:
                 current_page += 1
 
             logger.info(f"Fetched {len(all_data)} computer records from SX API.")
+            print(all_data)
             return all_data
         except requests.RequestException as e:
             logger.error(f"Error fetching SX computer data: {e}")
@@ -140,22 +163,40 @@ class SXAPIHandler:
     
     def parse_computer_details(self, response_json):
         """Parse all computer details from API response using self.properties."""
-        data = response_json.get('data', [])
-        properties_mapping = self.properties
+        if self.delta is None:
+            data = response_json.get('data', [])
+        else:
+            data = response_json.get('result', [])
+
         processed_data = []
-        print(properties_mapping.items())
 
         for computer in data:
             entry = {}
-            for display_name, backend_field in properties_mapping.items():
-                print(computer, backend_field)
-                value = self.get_property_value(computer, backend_field)
+            for display_name, prop_info in self.properties.items():
+                propertyname = prop_info.get("propertyname")
+                proptype = prop_info.get("type")
 
+                value = None
+
+                if proptype == "general":
+                    value = computer.get(propertyname)
+                elif proptype == "technical":
+                    for attr in computer.get("ATTRIBUTE", []):
+                        if attr.get("attribute_name") == propertyname:
+                            value = attr.get("attr_value")
+                            break
+                elif proptype == "custom":
+                    for tag in computer.get("TAG", {}).get("tag_data", []):
+                        if tag.get("tag_name") == propertyname:
+                            value = tag.get("tag_value")
+                            break
+
+                # Flatten lists and ensure strings
                 if isinstance(value, list):
-                    entry[backend_field] = ", ".join(str(v) for v in value)
+                    entry[propertyname] = ", ".join(str(v) for v in value)
                 else:
-                    entry[backend_field] = str(value) if value else ""
-            print(computer)
+                    entry[propertyname] = str(value) if value is not None else ""
+
             logger.info(entry)
             print(entry)
             processed_data.append(entry)

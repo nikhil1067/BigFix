@@ -14,6 +14,7 @@ def main(provide_credentials=False, init=False, provide_proxy_credentials=False,
     from credentials_manager.user_payload_generator import APIClient
     import getpass
     import json
+    import collections
     import csv
     import os
     import sys
@@ -29,20 +30,37 @@ def main(provide_credentials=False, init=False, provide_proxy_credentials=False,
 
     # Define file paths
     preview_records_path = os.path.join(base_dir, "Preview_Records.csv")
-    cache_path = os.path.join(base_dir, "RecordsCache.dat")
+    cache_path = os.path.join(base_dir, "RecordsCache.json.gz")
 
     # Generate a unique hash
     crypto_services = CryptoServices()
+    
     if reset:
+        # Delete RecordsCache.json.gz if it exists
+        if os.path.exists(cache_path):
+            os.remove(cache_path)
+            print("Deleted RecordsCache.json.gz file.")
+            logger.info("Deleted RecordsCache.json.gz file.")
+        # Find and reset the delta_data setting
+        for setting in root.find('settings'):
+            if setting.attrib.get('key') == 'delta_data':
+                setting.set('value', '')
+                break
+        # Save the updated XML back to file
+        tree.write(config_path, encoding='utf-8', xml_declaration=True)
+        print("Resetting delta_data setting to ''.")
+        logger.info("Resetting delta_data setting to ''.")
         # Reset unique_hash when --reset flag is used
         new_hash = crypto_services.generate_unique_hash(config_path=config_path)
         print(f"Reset completed. New CMDB Hash: {new_hash}")
-        # Delete RecordsCache.dat if it exists
-        if os.path.exists(cache_path):
-            os.remove(cache_path)
-            print("Deleted RecordsCache.dat file.")
+        logger.info(f"Reset completed. New CMDB Hash: {new_hash}")
         return
     
+    # Get delta duration value
+    delta_data = SETTINGS["delta_data"] if SETTINGS["delta_data"] != "" else None
+    logger.info(f"Fetching delta data: {delta_data}")
+    print(f"Fetching delta data: {delta_data}")
+
     # Read unique_hash from XML, if empty, generate a new one
     unique_hash = root.get("uniquehash", "").strip()
     if not unique_hash:
@@ -100,7 +118,6 @@ def main(provide_credentials=False, init=False, provide_proxy_credentials=False,
         "Transfer Asset Data from ServiceExchange to Bigfix",
         "Transfer Asset Data from Bigfix to ServiceExchange"
     ]
-
     # Dictionary to store properties for each dataflow
     dataflows_properties = {}
 
@@ -116,14 +133,23 @@ def main(provide_credentials=False, init=False, provide_proxy_credentials=False,
                     device_properties = adapter_element.find("device_properties")
                     
                     if device_properties is not None:
-                        properties = {prop.get("displayname"): prop.get("propertyname") for prop in device_properties.findall("property")}
-                        identity_properties = {prop.get("displayname"): prop.get("propertyname") for prop in device_properties.findall("identityproperty")}
-                        properties_dict[datasource_name] = {**properties, **identity_properties}  # Merge both dictionaries
+                        adapter_properties = {}
+                        # Include <property> and <identityproperty> nodes
+                        for prop_node in device_properties.findall("./property") + device_properties.findall("./identityproperty"):
+                            displayname = prop_node.get("displayname")
+                            propertyname = prop_node.get("propertyname")
+                            proptype = prop_node.get("type", "general")  # Default to 'general' if 'type' is missing
+                            adapter_properties[displayname] = {
+                                "propertyname": propertyname,
+                                "type": proptype
+                            }
+                        properties_dict[datasource_name] = adapter_properties
             dataflows_properties[dataflow_name] = properties_dict
         else:
             dataflows_properties[dataflow_name] = None
+
     print("Requested dataflow:", dataflow_filter)
-    logger.info("Requested dataflow:", dataflow_filter)
+    logger.info(f"Requested dataflow: {dataflow_filter}")
 
     # Integrating logic for multiple schedules
     if dataflow_filter:
@@ -132,7 +158,7 @@ def main(provide_credentials=False, init=False, provide_proxy_credentials=False,
             if df_name != dataflow_filter:
                 dataflows_properties.pop(df_name)
     print("Available dataflows:", list(dataflows_properties.keys()))
-    logger.info("Available dataflows:", list(dataflows_properties.keys()))
+    logger.info(f"Available dataflows: {list(dataflows_properties.keys())}")
     
     # Dataflow check
     if "Transfer Asset Data from ServiceExchange to Bigfix" in dataflows_properties:
@@ -184,9 +210,9 @@ def main(provide_credentials=False, init=False, provide_proxy_credentials=False,
     if sx_proxy_url:
         sx_proxy_username = sx_config.get("proxyusername")
         sx_proxy_password = credentials_manager.retrieve_password(sx_proxy_username)
-        sx_api = SXAPIHandler(config_path=config_path, record_limit=record_limit, base_url=sx_connection, username=sx_username, password=sx_password, proxy_url=sx_proxy_url, proxy_username=sx_proxy_username, proxy_password=sx_proxy_password, verify=sx_ssl_verify, x_user_payload=sx_user_payload, sx_properties_sx_to_bf=sx_properties_sx_to_bf)
+        sx_api = SXAPIHandler(config_path=config_path, record_limit=record_limit, base_url=sx_connection, username=sx_username, password=sx_password, proxy_url=sx_proxy_url, proxy_username=sx_proxy_username, proxy_password=sx_proxy_password, verify=sx_ssl_verify, x_user_payload=sx_user_payload, sx_properties_sx_to_bf=sx_properties_sx_to_bf, delta=delta_data)
     else:
-        sx_api = SXAPIHandler(config_path=config_path, record_limit=record_limit, base_url=sx_connection, username=sx_username, password=sx_password, proxy_url=None, proxy_username=None, proxy_password=None, verify=sx_ssl_verify, x_user_payload=sx_user_payload, sx_properties_sx_to_bf=sx_properties_sx_to_bf)
+        sx_api = SXAPIHandler(config_path=config_path, record_limit=record_limit, base_url=sx_connection, username=sx_username, password=sx_password, proxy_url=None, proxy_username=None, proxy_password=None, verify=sx_ssl_verify, x_user_payload=sx_user_payload, sx_properties_sx_to_bf=sx_properties_sx_to_bf, delta=delta_data)
 
     # Handle init operations
     if init:
@@ -250,9 +276,12 @@ def main(provide_credentials=False, init=False, provide_proxy_credentials=False,
         # Parse DataFlow XML
         dataflow_root = (ET.parse(config_path)).getroot()
         
-        ############# Processing DataFlow #############
         ############# Transfer Asset Data from ServiceExchange to Bigfix #############
-        if dataflows_properties['Transfer Asset Data from ServiceExchange to Bigfix']:
+        def handle_sx_to_bigfix():
+            if not dataflows_properties.get('Transfer Asset Data from ServiceExchange to Bigfix'):
+                return
+
+            logger.info("Handling SX → BigFix flow...")
             correlated_data = None
             logger.info("Fetching data from SX...")
             sx_data = sx_api.get_computer_data() or []
@@ -260,7 +289,7 @@ def main(provide_credentials=False, init=False, provide_proxy_credentials=False,
             
             if not bigfix_data or not sx_data:
                 logger.error("Data not available to correlate.")
-                exit(100)
+                return
             
             # Extract mappings from BigFix property names to display names
             bf_mappings = {}
@@ -292,29 +321,40 @@ def main(provide_credentials=False, init=False, provide_proxy_credentials=False,
             for entry in sx_data:
                 formatted_entry = {sx_mappings[key]: value for key, value in entry.items() if key in sx_mappings}
                 sx_data_sx_to_bf.append(formatted_entry)
+                print(formatted_entry)
             print(sx_data_sx_to_bf)
 
-            sx_to_bf_cache = cache.load_from_cache('sx_to_bf') or {}
-			
-            cached_bigfix_data = sx_to_bf_cache.get("bigfix_data", [])
-            new_bigfix_data = [data for data in bigfix_data_sx_to_bf if data not in cached_bigfix_data]
-            print(new_bigfix_data)
+            def clean_value(val):
+                return "" if val in (None, "null", "NULL", "None") else str(val).strip()
 
-            cached_sx_data = sx_to_bf_cache.get("sx_data", [])
-            new_sx_data = [data for data in sx_data_sx_to_bf if data not in cached_sx_data]
-            print(new_sx_data)
-			
+            def normalize_dict(d, allowed_keys=None):
+                if allowed_keys:
+                    d = {k: d[k] for k in d if k in allowed_keys}
+                return collections.OrderedDict(sorted((k, clean_value(v)) for k, v in d.items()))
+
+            # Load and normalize cache
+            sx_to_bf_cache = cache.load_from_cache('sx_to_bf') or {}
+            cached_sx_data = [normalize_dict(d, sx_mappings.values()) for d in sx_to_bf_cache.get("sx_data", [])]
+
+            # Normalize current data
+            normalized_sx_data = [normalize_dict(d, sx_mappings.values()) for d in sx_data_sx_to_bf]
+
+            # Compute new records
+            new_sx_data = [original for original, norm in zip(sx_data_sx_to_bf, normalized_sx_data) if norm not in cached_sx_data]
+
+            print("New SX Data:", new_sx_data)
+            logger.info(f"New SX Data: {new_sx_data}")
+
+            # Save updated cache
             sx_to_bf_cache = {
-                'bigfix_data': bigfix_data_sx_to_bf,
-				'sx_data': sx_data_sx_to_bf
+                'sx_data': sx_data_sx_to_bf
             }
-            
             cache.save_to_cache('sx_to_bf', sx_to_bf_cache)
             
-            if not new_bigfix_data or not new_sx_data:
-                logger.info("No new or changed data in BigFix/ServiceExchange to process.")
-                print("No new or changed data in BigFix/ServiceExchange to process.")
-                exit(0)
+            if not new_sx_data:
+                logger.info("No new or changed data in ServiceExchange to process.")
+                print("No new or changed data in ServiceExchange to process.")
+                return
 
             logger.info("Sending new Service Exchange data to BigFix data ...")
             identity_properties = DataCorrelation.parse_identity_properties(config_path)
@@ -323,9 +363,10 @@ def main(provide_credentials=False, init=False, provide_proxy_credentials=False,
             # Parse XML and extract mappings
             root = (ET.parse(config_path)).getroot()
 
-            correlated_data = DataCorrelation.correlate(bigfix_data=new_bigfix_data, sx_data=new_sx_data, bigfix_properties=dataflows_properties['Transfer Asset Data from ServiceExchange to Bigfix']['BigFixRestAPI'], sx_properties=dataflows_properties['Transfer Asset Data from ServiceExchange to Bigfix']['ServiceExchangeAPI'], identity_properties=identity_properties)
+            correlated_data = DataCorrelation.correlate(bigfix_data=bigfix_data_sx_to_bf, sx_data=new_sx_data, bigfix_properties=dataflows_properties['Transfer Asset Data from ServiceExchange to Bigfix']['BigFixRestAPI'], sx_properties=dataflows_properties['Transfer Asset Data from ServiceExchange to Bigfix']['ServiceExchangeAPI'], identity_properties=identity_properties)
             ####################################################
             print(correlated_data)
+            logger.info(f"Correlated Data: {correlated_data}")
             
             if correlated_data:
                 if preview_only:
@@ -372,13 +413,16 @@ def main(provide_credentials=False, init=False, provide_proxy_credentials=False,
                             logger.error(f"Failed to push data for computer ID {computer_id}. Response: {response}")
             else:
                 logger.info("No correlation found between BigFix and ServiceExchange Computer Data.")
+
         ############# Transfer Asset Data from Bigfix to ServiceExchange #############
-        if dataflows_properties['Transfer Asset Data from Bigfix to ServiceExchange']:
-            
-            # Checks for new bigfix data
+        def handle_bigfix_to_sx():
+            if not dataflows_properties.get('Transfer Asset Data from Bigfix to ServiceExchange'):
+                return
+
+            logger.info("Handling BigFix → SX flow...")
             if not bigfix_data:
                 logger.error("BigFix Data not available to correlate/send to ServiceExchange.")
-                exit(100)
+                return
 
             # Create mapping dictionaries
             bigfix_direct_mapping = {}  # For <property> and <identityproperty>
@@ -388,21 +432,21 @@ def main(provide_credentials=False, init=False, provide_proxy_credentials=False,
             dataflow = dataflow_root.find(".//dataflow[@displayname='Transfer Asset Data from Bigfix to ServiceExchange']")
             if dataflow is None:
                 logger.error("ERROR: DataFlow not found!")
-                exit(100)
+                return
 
             source_adapter = dataflow.find(".//sourceadapter")
             target_adapter = dataflow.find(".//targetadapter")
 
             if source_adapter is None or target_adapter is None:
                 logger.error("ERROR: Source or Target Adapter missing in DataFlow XML")
-                exit()
+                return
 
             source_device_props = source_adapter.find(".//device_properties")
             target_device_props = target_adapter.find(".//device_properties")
 
             if source_device_props is None or target_device_props is None:
                 logger.error("ERROR: device_properties missing in source or target adapter")
-                exit()
+                return
 
             source_properties = list(source_device_props)
             target_properties = list(target_device_props)
@@ -450,6 +494,23 @@ def main(provide_credentials=False, init=False, provide_proxy_credentials=False,
                     if bf_key in settings_dict:
                         device_data[sx_key] = settings_dict[bf_key]
 
+                # Inject custom fields into tag format
+                    custom_tags = []
+                    for prop in target_properties:
+                        tag_type = prop.get("type", "general")
+                        if tag_type == "custom":
+                            tag_name = prop.get("propertyname")
+                            tag_value = device_data.pop(tag_name, None)  # remove if present
+                            if tag_value is not None:
+                                custom_tags.append({
+                                    "tag_name": tag_name,
+                                    "tag_value": tag_value,
+                                    "tag_mandatory": False
+                                })
+
+                    if custom_tags:
+                        device_data["tag"] = {"tag_data": custom_tags}
+
                 # Debug: show transformed device data
                 print(device_data)
                 bigfix_data_bf_to_sx.append(device_data)
@@ -457,6 +518,7 @@ def main(provide_credentials=False, init=False, provide_proxy_credentials=False,
             cached_bigfix_data = cache.load_from_cache('bf_to_sx') or []
             new_bigfix_data = [data for data in bigfix_data_bf_to_sx if data not in cached_bigfix_data]
             print(new_bigfix_data)
+            logger.info(f"New BigFix Data: {new_bigfix_data}")
             
             cache.save_to_cache('bf_to_sx', bigfix_data_bf_to_sx)
             if not new_bigfix_data:
@@ -481,6 +543,13 @@ def main(provide_credentials=False, init=False, provide_proxy_credentials=False,
                     return
 
                 sx_api.post_computer_details(new_bigfix_data)
+
+        ############# Processing DataFlow #############
+        if dataflows_properties['Transfer Asset Data from ServiceExchange to Bigfix']:
+            handle_sx_to_bigfix()
+        if dataflows_properties['Transfer Asset Data from Bigfix to ServiceExchange']:
+            handle_bigfix_to_sx()
+            
     except Exception as e:
         logger.error(f"Error during processing: {e}")
 

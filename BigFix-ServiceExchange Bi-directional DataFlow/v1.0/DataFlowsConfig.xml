@@ -1,23 +1,24 @@
 <?xml version='1.0' encoding='utf-8'?>
-<dataflowconfig xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="DataflowsConfig.xsd" uniquehash="94a7ea093f092cb63fbd85d8624cf00c46c1017f">
+<dataflowconfig xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="DataflowsConfig.xsd" uniquehash="9f824c55b8193bd333b913b509c31dd2780a6e9c53335500fd98d01c93e46038cecb124e0f4aca2243650f9a1997fb60">
 	<datasources>
 		<datasource datasourcename="BigFixRestAPI" connectionstring="https://10.1.160.143:52311" site="ServiceExchange CMDB Attributes" verifycert="false" username="bigfix" proxyurl="" proxyusername="" />
 		<datasource datasourcename="ServiceExchangeAPI" connectionstring="https://xsmtest.dryice-aws.com" tokenurl="https://xsmauth-test.dryice-aws.com/realms/SX-QA/protocol/openid-connect/token" verifycert="false" clientid="hindustan_unilever_limited" username="hclt_breakfixmanager@hclt.com" proxyurl="" proxyusername="" />
 	</datasources>
   	<dataflows>
-    <dataflow displayname="Transfer Asset Data from ServiceExchange to Bigfix" datatype="asset" schedule="PT1M">
+    <dataflow displayname="Transfer Asset Data from ServiceExchange to Bigfix" datatype="asset" schedule="PT5M">
 		<dataflowdescription />
 		<sourceadapter displayname="ServiceExchange Adapter" adapterclass="ServiceExchange" datasourcename="ServiceExchangeAPI">
 			<device_properties>
-				<property displayname="CI ID" propertyname="CI_ID" datatype="string" />
-				<property displayname="Company Name" propertyname="COMPANY_NAME" datatype="string" />
-				<property displayname="Department" propertyname="DEPARTMENT_NAME" datatype="string" />
-				<property displayname="Class Name" propertyname="CLASS_NAME" datatype="string" />
-				<property displayname="Serial Number" propertyname="SERIAL_NUMBER" datatype="string" />
-				<property displayname="Location" propertyname="LOCATION_NAME" datatype="string" />
-				<identityproperty displayname="CI Name" propertyname="CI_NAME" datatype="string" />
-				<identityproperty displayname="IP Address" propertyname="IP_ADDRESS" datatype="string" weight="20" />
-				<identityproperty displayname="MAC Address" propertyname="MAC_ADDRESS" datatype="string" weight="20" />
+				<property displayname="CI ID" propertyname="CI_ID" type="general" datatype="string" />
+				<property displayname="Company Name" propertyname="COMPANY_NAME" type="general" datatype="string" />
+				<property displayname="Department" propertyname="DEPARTMENT_NAME" type="general" datatype="string" />
+				<property displayname="Class Name" propertyname="CLASS_NAME" type="general" datatype="string" />
+				<property displayname="Serial Number" propertyname="SERIAL_NUMBER" type="general" datatype="string" />
+				<property displayname="Location" propertyname="LOCATION_NAME" type="general" datatype="string" />
+				<property displayname="In DMZ" propertyname="In DMZ" type="technical" datatype="string" />
+				<identityproperty displayname="CI Name" propertyname="CI_NAME" type="general" datatype="string" />
+				<identityproperty displayname="IP Address" propertyname="IP_ADDRESS" type="general" datatype="string" weight="20" />
+				<identityproperty displayname="MAC Address" propertyname="MAC_ADDRESS" type="general" datatype="string" weight="20" />
 			</device_properties>
 		</sourceadapter>
 		<targetadapter displayname="Bigfix Adapter" adapterclass="bigfix" datasourcename="BigFixRestAPI">
@@ -29,7 +30,7 @@
 			</device_properties>
 		</targetadapter>
 	</dataflow>
-	<dataflow displayname="Transfer Asset Data from Bigfix to ServiceExchange" datatype="asset" schedule="PT10M">
+	<dataflow displayname="Transfer Asset Data from Bigfix to ServiceExchange" datatype="asset" schedule="PT30M">
 		<dataflowdescription />
 		<sourceadapter displayname="Bigfix Adapter" adapterclass="bigfix" datasourcename="BigFixRestAPI">
 			<device_properties>
@@ -41,22 +42,24 @@
 				<setting displayname="Company Name" propertyname="Company Name" datatype="string" />
 				<setting displayname="Class" propertyname="Class" datatype="string" />
 				<setting displayname="Type" propertyname="Type" datatype="string" />
+				<setting displayname="Test" propertyname="Test" datatype="string" />
 				<identityproperty displayname="IP Address" propertyname="IP Address" datatype="string" />
 				<identityproperty displayname="MAC Address" propertyname="MAC Address" datatype="string" />
 			</device_properties>
 		</sourceadapter>
 		<targetadapter displayname="ServiceExchange Adapter" adapterclass="ServiceExchange" datasourcename="ServiceExchangeAPI">
 			<device_properties>
-				<property displayname="Name" propertyname="ciName" datatype="string" />
-				<property displayname="Status" propertyname="status" datatype="string" />
-				<property displayname="Sub-Status" propertyname="subStatus" datatype="string" />
-				<property displayname="Category" propertyname="category" datatype="string" />
-				<property displayname="Sub-Category" propertyname="subCategory" datatype="string" />
-				<property displayname="Company Name" propertyname="companyName" datatype="string" />
-				<property displayname="Class" propertyname="class" datatype="string" />
-				<property displayname="Type" propertyname="type" datatype="string" />
-				<identityproperty displayname="IP Address" propertyname="ipAddress" datatype="string" />
-				<identityproperty displayname="MAC Address" propertyname="macAddress" datatype="string" />
+				<property displayname="Name" propertyname="ciName" type="general" datatype="string" />
+				<property displayname="Status" propertyname="status" type="general" datatype="string" />
+				<property displayname="Sub-Status" propertyname="subStatus" type="general" datatype="string" />
+				<property displayname="Category" propertyname="category" type="general" datatype="string" />
+				<property displayname="Sub-Category" propertyname="subCategory" type="general" datatype="string" />
+				<property displayname="Company Name" propertyname="companyName" type="general" datatype="string" />
+				<property displayname="Class" propertyname="class" type="general" datatype="string" />
+				<property displayname="Type" propertyname="type" type="general" datatype="string" />
+				<property displayname="Test" propertyname="test" type="custom" datatype="string" />
+				<identityproperty displayname="IP Address" propertyname="ipAddress" type="general" datatype="string" />
+				<identityproperty displayname="MAC Address" propertyname="macAddress" type="general" datatype="string" />
 			</device_properties>
 		</targetadapter>
 	</dataflow>
@@ -70,5 +73,6 @@
 		<setting key="locker_service_name" value="bigfix_serviceexchange_dataflows_adapter" />
 		<setting key="preview_only" value="False" />
 		<setting key="log_level" value="INFO" />
+		<setting key="delta_data" value="P2D" />
 	</settings>
 </dataflowconfig>

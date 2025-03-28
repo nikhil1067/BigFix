@@ -168,6 +168,7 @@ class PythonWindowsService(win32serviceutil.ServiceFramework):
                 name: dt.strftime("%Y-%m-%d %H:%M:%S") for name, dt in self.next_run_times.items()
             }
             logger.info(f"Scheduled times: {formatted_times}")
+            execute_main_script()
 
             while True:
                 result = win32event.WaitForSingleObject(self.hWaitStop, 1000)
